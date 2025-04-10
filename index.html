@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Speaking Test</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 1rem;
+    }
+    button {
+      margin: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <h3>🎤 Tell your story here</h3>
+  <button id="start">Start Recording</button>
+  <button id="stop" disabled>Stop Recording</button>
+  <audio id="player" controls></audio>
+  <p><strong>Download your file below and upload it to the Formester form:</strong></p>
+  <a id="downloadLink" href="#" download="recording.webm" style="display: none;">Download Recording</a>
+
+  <script>
+    let mediaRecorder;
+    let chunks = [];
+
+    const startBtn = document.getElementById('start');
+    const stopBtn = document.getElementById('stop');
+    const player = document.getElementById('player');
+    const downloadLink = document.getElementById('downloadLink');
+
+    startBtn.onclick = async () => {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      chunks = [];
+
+      mediaRecorder.ondataavailable = e => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        const url = URL.createObjectURL(blob);
+        player.src = url;
+        downloadLink.href = url;
+        downloadLink.style.display = 'inline';
+      };
+
+      mediaRecorder.start();
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+    };
+
+    stopBtn.onclick = () => {
+      mediaRecorder.stop();
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+    };
+  </script>
+</body>
+</html>
