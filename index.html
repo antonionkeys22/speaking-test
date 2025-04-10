@@ -46,7 +46,25 @@
   <button id="stopBtn" disabled>Stop Recording</button>
   <audio id="audioPlayer" controls></audio>
 
+  <!-- Firebase CDN -->
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-storage.js"></script>
+
   <script>
+    // Initialize Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDQUgdMkHeHsl-j2o_w3-pdunWq48zmz4A",
+      authDomain: "speakingtest-3dd8a.firebaseapp.com",
+      projectId: "speakingtest-3dd8a",
+      storageBucket: "speakingtest-3dd8a.firebasestorage.app",
+      messagingSenderId: "975162590703",
+      appId: "1:975162590703:web:9b6f7b710424dc5815a21a",
+    };
+    
+    const app = firebase.initializeApp(firebaseConfig);
+    const storage = firebase.storage();
+
+    // Start Recording
     let mediaRecorder;
     let audioChunks = [];
 
@@ -54,20 +72,52 @@
     const stopBtn = document.getElementById("stopBtn");
     const audioPlayer = document.getElementById("audioPlayer");
 
-    // Start recording when button is clicked
-    startBtn.addEventListener("click", async () => {
-      console.log("Start button clicked!");
+    // Upload audio to Firebase Storage
+    async function uploadAudioToFirebase(audioBlob) {
+      const storageRef = storage.ref();
+      const audioRef = storageRef.child('recordings/' + new Date().toISOString() + '.wav');
+      await audioRef.put(audioBlob);
+      console.log("Audio uploaded successfully.");
+    }
 
+    startBtn.addEventListener("click", async () => {
       try {
         // Request user media (microphone)
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        console.log("Media stream obtained:", stream);
-        
         mediaRecorder = new MediaRecorder(stream);
 
         mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-        mediaRecorder.onstop = () => {
+        mediaRecorder.onstop = async () => {
           const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+          const audioUrl = URL.createObjectURL(audioBlob);
+          audioPlayer.src = audioUrl;
+
+          // Upload audio to Firebase Storage
+          await uploadAudioToFirebase(audioBlob);
+
+          audioChunks = [];
+        };
+
+        mediaRecorder.start();
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+      } catch (error) {
+        console.error("Error accessing media devices.", error);
+      }
+    });
+
+    stopBtn.addEventListener("click", () => {
+      mediaRecorder.stop();
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+    });
+
+    // Suppress Crisp warning
+    $crisp.push(["safe", true]);
+  </script>
+</body>
+</html>
+
 
 
 
