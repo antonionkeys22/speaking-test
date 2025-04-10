@@ -1,89 +1,97 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Speaking Test</title>
+  <meta charset="UTF-8">
+  <title>Speaking Test Recorder</title>
   <style>
     body {
       background-color: transparent;
       color: white;
       font-family: Arial, sans-serif;
       text-align: center;
-      padding: 40px;
+      padding: 2rem;
     }
-
-    h1 {
-      margin-bottom: 30px;
-    }
-
     button {
       background-color: #0E134F;
       color: white;
       border: none;
-      border-radius: 10px;
-      padding: 12px 24px;
-      margin: 10px;
-      cursor: pointer;
+      padding: 10px 20px;
+      border-radius: 12px;
       font-size: 16px;
-      transition: background-color 0.3s ease;
+      cursor: pointer;
+      margin: 10px;
     }
-
     button:hover {
-      background-color: #1A1F6E;
+      background-color: #1F2B7B;
     }
-
     audio {
-      margin-top: 30px;
-      width: 100%;
-      max-width: 400px;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
-  <h1>🎙️ Tell your story here</h1>
-  <button id="startBtn">Start Recording</button>
-  <button id="stopBtn" disabled>Stop Recording</button>
-  <audio id="audioPlayer" controls></audio>
+  <h2>🎤 Speaking Test Recorder</h2>
+  <button id="recordBtn">Start Recording</button>
+  <button id="stopBtn" disabled>Stop & Upload</button>
+  <audio id="player" controls></audio>
 
-  <script>
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
+
+    // Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDQUgdMkHeHsl-j2o_w3-pdunWq48zmz4A",
+      authDomain: "speakingtest-3dd8a.firebaseapp.com",
+      projectId: "speakingtest-3dd8a",
+      storageBucket: "speakingtest-3dd8a.appspot.com",
+      messagingSenderId: "975162590703",
+      appId: "1:975162590703:web:9b6f7b710424dc5815a21a"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const storage = getStorage(app);
+
+    const recordBtn = document.getElementById('recordBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const player = document.getElementById('player');
+
     let mediaRecorder;
     let audioChunks = [];
 
-    const startBtn = document.getElementById("startBtn");
-    const stopBtn = document.getElementById("stopBtn");
-    const audioPlayer = document.getElementById("audioPlayer");
-
-    startBtn.addEventListener("click", async () => {
+    recordBtn.onclick = async () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
 
       mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        audioPlayer.src = audioUrl;
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const fileName = `audio_${Date.now()}.webm`;
 
-        // Optional: Download automatically
-        const a = document.createElement("a");
-        a.href = audioUrl;
-        a.download = "recording.wav";
-        a.click();
+        // Upload to Firebase
+        const audioRef = ref(storage, 'recordings/' + fileName);
+        await uploadBytes(audioRef, audioBlob);
 
-        audioChunks = [];
+        const downloadURL = await getDownloadURL(audioRef);
+        player.src = downloadURL;
+        console.log('Audio available at:', downloadURL);
+        alert('Audio uploaded successfully!');
       };
 
       mediaRecorder.start();
-      startBtn.disabled = true;
+      recordBtn.disabled = true;
       stopBtn.disabled = false;
-    });
+    };
 
-    stopBtn.addEventListener("click", () => {
+    stopBtn.onclick = () => {
       mediaRecorder.stop();
-      startBtn.disabled = false;
+      recordBtn.disabled = false;
       stopBtn.disabled = true;
-    });
+    };
   </script>
 </body>
 </html>
+
 
