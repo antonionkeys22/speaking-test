@@ -46,10 +46,6 @@
   <button id="stopBtn" disabled>Stop Recording</button>
   <audio id="audioPlayer" controls></audio>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js"></script>
-
   <script>
     let mediaRecorder;
     let audioChunks = [];
@@ -57,22 +53,8 @@
     const startBtn = document.getElementById("startBtn");
     const stopBtn = document.getElementById("stopBtn");
     const audioPlayer = document.getElementById("audioPlayer");
-    // Firebase configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyDQUgdMkHeHsl-j2o_w3-pdunWq48zmz4A",
-      authDomain: "speakingtest-3dd8a.firebaseapp.com",
-      projectId: "speakingtest-3dd8a",
-      storageBucket: "speakingtest-3dd8a.firebasestorage.app",
-      messagingSenderId: "975162590703",
-      appId: "1:975162590703:web:9b6f7b710424dc5815a21a"
-    };
 
-    // Initialize Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const storage = firebase.storage();
-    const storageRef = storage.ref();
-
-   // Start recording when button is clicked
+    // Start recording when button is clicked
     startBtn.addEventListener("click", async () => {
       console.log("Start button clicked!");
 
@@ -84,54 +66,8 @@
         mediaRecorder = new MediaRecorder(stream);
 
         mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-        mediaRecorder.onstop = async () => {
+        mediaRecorder.onstop = () => {
           const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-          const audioUrl = URL.createObjectURL(audioBlob);
-          audioPlayer.src = audioUrl;
-
-          console.log("Recording stopped. Playing audio...");
-          
-          // Upload the audio to Firebase after recording stops
-          await uploadToFirebase(audioBlob);
-
-          audioChunks = [];
-        };
-
-        mediaRecorder.start();
-        console.log("Recording started!");
-
-        startBtn.disabled = true;
-        stopBtn.disabled = false;
-      } catch (error) {
-        console.error("Error accessing media devices.", error);
-      }
-    });
-
-    // Stop recording when stop button is clicked
-    stopBtn.addEventListener("click", () => {
-      console.log("Stop button clicked!");
-      mediaRecorder.stop();
-      startBtn.disabled = false;
-      stopBtn.disabled = true;
-    });
-
-    // Function to upload to Firebase
-    async function uploadToFirebase(blob) {
-      try {
-        const fileName = 'audio-' + new Date().toISOString() + '.wav';
-        const fileRef = firebase.storage().ref().child(fileName);
-        const uploadTask = await fileRef.put(blob);
-
-        // You can log the download URL if needed
-        const downloadURL = await uploadTask.ref.getDownloadURL();
-        console.log("File uploaded successfully: ", downloadURL);
-      } catch (error) {
-        console.error("Error uploading to Firebase: ", error);
-      }
-    }
-  </script>
-</body>
-</html>
 
 
 
