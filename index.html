@@ -46,7 +46,22 @@
   <button id="stopBtn" disabled>Stop Recording</button>
   <audio id="audioPlayer" controls></audio>
 
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js"></script>
   <script>
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDQUgdMkHeHsl-j2o_w3-pdunWq48zmz4A",
+      authDomain: "speakingtest-3dd8a.firebaseapp.com",
+      projectId: "speakingtest-3dd8a",
+      storageBucket: "speakingtest-3dd8a.firebasestorage.app",
+      messagingSenderId: "975162590703",
+      appId: "1:975162590703:web:9b6f7b710424dc5815a21a"
+    };
+
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const storage = firebase.storage();
     let mediaRecorder;
     let audioChunks = [];
 
@@ -64,11 +79,8 @@
         const audioUrl = URL.createObjectURL(audioBlob);
         audioPlayer.src = audioUrl;
 
-        // Optional: Download automatically
-        const a = document.createElement("a");
-        a.href = audioUrl;
-        a.download = "recording.wav";
-        a.click();
+        // Upload audio to Firebase Storage
+        uploadToFirebase(audioBlob);
 
         audioChunks = [];
       };
@@ -83,6 +95,21 @@
       startBtn.disabled = false;
       stopBtn.disabled = true;
     });
+
+    function uploadToFirebase(blob) {
+      const audioRef = storage.ref('audio_files/audio-recording-' + Date.now() + '.wav');
+      const uploadTask = audioRef.put(blob);
+
+      uploadTask.on('state_changed', (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        console.log('Upload is ' + progress + '% done');
+      }, (error) => {
+        console.error('Upload failed: ', error);
+      }, () => {
+        console.log('Upload successful!');
+        alert('Audio uploaded successfully!');
+      });
+    }
   </script>
 </body>
 </html>
