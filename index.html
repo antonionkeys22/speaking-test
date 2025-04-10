@@ -63,76 +63,54 @@
         let mediaRecorder;
         let audioChunks = [];
 
-        document.getElementById('recordButton').addEventListener('click', async function() {
+        document.getElementById('startRecord').addEventListener('click', async () => {
             try {
-                // Request microphone access
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                
-                // Disable the button and update text
-                this.disabled = true;
-                this.textContent = 'Recording...';
-                
-                // Reset chunks
-                audioChunks = [];
-                
-                // Setup MediaRecorder
                 mediaRecorder = new MediaRecorder(stream);
-                
-                mediaRecorder.ondataavailable = (event) => {
-                    if (event.data.size > 0) {
-                        audioChunks.push(event.data);
-                    }
-                };
+                audioChunks = [];
 
-                mediaRecorder.onstop = async () => {
+                mediaRecorder.addEventListener('dataavailable', event => {
+                    audioChunks.push(event.data);
+                });
+
+                mediaRecorder.addEventListener('stop', () => {
                     const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
                     const audioUrl = URL.createObjectURL(audioBlob);
-                    const audio = document.getElementById('audioPlayback');
-                    audio.src = audioUrl;
+                    document.getElementById('recordedAudio').src = audioUrl;
 
                     // Upload to Firebase
-                    try {
-                        await uploadAudioToFirebase(audioBlob);
-                    } catch (error) {
-                        console.error('Upload error:', error);
-                        alert('Error uploading audio: ' + error.message);
-                    }
+                    const storageRef = storage.ref();
+                    const audioRef = storageRef.child(`recordings/${Date.now()}.wav`);
 
-                    // Reset button
-                    this.disabled = false;
-                    this.textContent = 'Empieza a grabar';
-                    
-                    // Stop all tracks
-                    stream.getTracks().forEach(track => track.stop());
-                };
+                    audioRef.put(audioBlob).then((snapshot) => {
+                        console.log('Audio uploaded successfully');
+                    });
+                });
 
                 mediaRecorder.start();
-                console.log('Recording started...');
+                document.getElementById('startRecord').disabled = true;
+                document.getElementById('stopRecord').disabled = false;
 
-                // Stop recording after 400 seconds
-                setTimeout(() => {
-                    if (mediaRecorder.state === 'recording') {
-                        mediaRecorder.stop();
-                    }
-                }, 400000);
-                
             } catch (err) {
-                console.error('Microphone access error:', err);
-                alert('Please allow microphone access to record audio.');
-                this.disabled = false;
+                console.error('Error accessing microphone:', err);
+                alert('Error accessing microphone. Please ensure you have granted microphone permissions.');
             }
         });
 
-        async function uploadAudioToFirebase(audioBlob) {
-            const fileRef = ref(storage, 'audio/' + new Date().toISOString() + '.wav');
-            
-            const snapshot = await uploadBytes(fileRef, audioBlob);
-            const downloadURL = await getDownloadURL(snapshot.ref);
-            
-            console.log('File available at', downloadURL);
-            alert('Your audio has been uploaded successfully! You can view it here: ' + downloadURL);
-        }
+        document.getElementById('stopRecord').addEventListener('click', () => {
+            mediaRecorder.stop();
+            document.getElementById('startRecord').disabled = false;
+            document.getElementById('stopRecord').disabled = true;
+        });
+
+
     </script>
+</head>
+<body>
+    <button id="startRecord">Start Recording</button>
+    <button id="stopRecord" disabled>Stop Recording</button>
+    <audio id="recordedAudio" controls></audio>
+
 </body>
 </html>
 
