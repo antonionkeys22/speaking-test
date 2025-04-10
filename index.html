@@ -50,47 +50,85 @@
       appId: "1:975162590703:web:9b6f7b710424dc5815a21a"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const storage = getStorage(app);
+    
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const storage = firebase.storage();
 
-    const recordBtn = document.getElementById('recordBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const player = document.getElementById('player');
+        let mediaRecorder;
+        let audioChunks = [];
 
-    let mediaRecorder;
-    let audioChunks = [];
+        // Start Recording button event listener
+        document.getElementById('recordButton').addEventListener('click', function() {
+            // Disable the button while recording
+            document.getElementById('recordButton').disabled = true;
 
-    recordBtn.onclick = async () => {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
-      audioChunks = [];
+            // Request microphone access
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(function(stream) {
+                    // Microphone access granted
+                    console.log('Microphone access granted');
+                    mediaRecorder = new MediaRecorder(stream);
 
-      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        const fileName = `audio_${Date.now()}.webm`;
+                    // Push audio chunks as they are recorded
+                    mediaRecorder.ondataavailable = function(event) {
+                        audioChunks.push(event.data);
+                    };
 
-        // Upload to Firebase
-        const audioRef = ref(storage, 'recordings/' + fileName);
-        await uploadBytes(audioRef, audioBlob);
+                    // When recording stops, create audio file
+                    mediaRecorder.onstop = function() {
+                        let audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        let audioUrl = URL.createObjectURL(audioBlob);
+                        let audio = document.getElementById('audioPlayback');
+                        audio.src = audioUrl;
 
-        const downloadURL = await getDownloadURL(audioRef);
-        player.src = downloadURL;
-        console.log('Audio available at:', downloadURL);
-        alert('Audio uploaded successfully!');
-      };
+                        // Clear audio chunks for next recording
+                        audioChunks = [];
 
-      mediaRecorder.start();
-      recordBtn.disabled = true;
-      stopBtn.disabled = false;
-    };
+                        // Upload audio file to Firebase Storage
+                        uploadAudioToFirebase(audioBlob);
+                    };
 
-    stopBtn.onclick = () => {
-      mediaRecorder.stop();
-      recordBtn.disabled = false;
-      stopBtn.disabled = true;
-    };
-  </script>
+                    // Start recording
+                    mediaRecorder.start();
+                    console.log('Recording started...');
+
+                    // Re-enable the button after 3 seconds, you can adjust this as needed
+                    setTimeout(() => {
+                        document.getElementById('recordButton').disabled = false;
+                        document.getElementById('recordButton').textContent = 'Stop Recording';
+                        mediaRecorder.stop();
+                    }, 3000);  // Example: Stop recording after 3 seconds
+                })
+                .catch(function(err) {
+                    // Handle error if microphone access is denied
+                    console.error('Microphone access error:', err);
+                    alert('Please allow microphone access to record audio.');
+                    // Re-enable the button
+                    document.getElementById('recordButton').disabled = false;
+                });
+        });
+
+        // Upload audio file to Firebase Storage
+        function uploadAudioToFirebase(audioBlob) {
+            const storageRef = storage.ref();
+            const audioRef = storageRef.child('audio/' + new Date().toISOString() + '.wav');
+            
+            // Upload the audio Blob to Firebase
+            audioRef.put(audioBlob).then(function(snapshot) {
+                console.log('Audio file uploaded to Firebase Storage');
+                
+                // Get the download URL after the upload is complete
+                snapshot.ref.getDownloadURL().then(function(downloadURL) {
+                    console.log('File available at', downloadURL);
+                    alert('Your audio has been uploaded successfully! You can view it here: ' + downloadURL);
+                });
+            }).catch(function(error) {
+                console.error('Error uploading audio:', error);
+                alert('An error occurred while uploading the audio.');
+            });
+        }
+    </script>
 </body>
 </html>
 
