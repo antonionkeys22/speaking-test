@@ -51,6 +51,12 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js"></script>
 
   <script>
+    let mediaRecorder;
+    let audioChunks = [];
+
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const audioPlayer = document.getElementById("audioPlayer");
     // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyDQUgdMkHeHsl-j2o_w3-pdunWq48zmz4A",
@@ -65,13 +71,6 @@
     const app = firebase.initializeApp(firebaseConfig);
     const storage = firebase.storage();
     const storageRef = storage.ref();
-
-    let mediaRecorder;
-    let audioChunks = [];
-
-    const startBtn = document.getElementById("startBtn");
-    const stopBtn = document.getElementById("stopBtn");
-    const audioPlayer = document.getElementById("audioPlayer");
 
    // Start recording when button is clicked
     startBtn.addEventListener("click", async () => {
