@@ -1,62 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Speaking Test</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Audio Recorder</title>
   <style>
     body {
-      font-family: sans-serif;
-      padding: 1rem;
+      background-color: #121212;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 40px;
     }
+
+    h1 {
+      margin-bottom: 30px;
+    }
+
     button {
-      margin: 0.5rem;
+      background-color: #1e88e5;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 24px;
+      margin: 10px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #1565c0;
+    }
+
+    audio {
+      margin-top: 30px;
+      width: 100%;
+      max-width: 400px;
     }
   </style>
 </head>
 <body>
-  <h3>🎤 Tell your story here</h3>
-  <button id="start">Start Recording</button>
-  <button id="stop" disabled>Stop Recording</button>
-  <audio id="player" controls></audio>
-  <p><strong>Download your file below and upload it to the Formester form:</strong></p>
-  <a id="downloadLink" href="#" download="recording.webm" style="display: none;">Download Recording</a>
+  <h1>🎙️ Audio Recorder</h1>
+  <button id="startBtn">Start Recording</button>
+  <button id="stopBtn" disabled>Stop Recording</button>
+  <audio id="audioPlayer" controls></audio>
 
   <script>
     let mediaRecorder;
-    let chunks = [];
+    let audioChunks = [];
 
-    const startBtn = document.getElementById('start');
-    const stopBtn = document.getElementById('stop');
-    const player = document.getElementById('player');
-    const downloadLink = document.getElementById('downloadLink');
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const audioPlayer = document.getElementById("audioPlayer");
 
-    startBtn.onclick = async () => {
+    startBtn.addEventListener("click", async () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorder = new MediaRecorder(stream);
-      chunks = [];
 
-      mediaRecorder.ondataavailable = e => {
-        if (e.data.size > 0) chunks.push(e.data);
-      };
-
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        const url = URL.createObjectURL(blob);
-        player.src = url;
-        downloadLink.href = url;
-        downloadLink.style.display = 'inline';
+        const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        audioPlayer.src = audioUrl;
+
+        // Optional: Download automatically
+        const a = document.createElement("a");
+        a.href = audioUrl;
+        a.download = "recording.wav";
+        a.click();
+
+        audioChunks = [];
       };
 
       mediaRecorder.start();
       startBtn.disabled = true;
       stopBtn.disabled = false;
-    };
+    });
 
-    stopBtn.onclick = () => {
+    stopBtn.addEventListener("click", () => {
       mediaRecorder.stop();
       startBtn.disabled = false;
       stopBtn.disabled = true;
-    };
+    });
   </script>
 </body>
 </html>
+
