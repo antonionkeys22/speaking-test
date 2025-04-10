@@ -64,6 +64,7 @@
     // Initialize Firebase
     const app = firebase.initializeApp(firebaseConfig);
     const storage = firebase.storage();
+    const storageRef = storage.ref();
 
     let mediaRecorder;
     let audioChunks = [];
@@ -72,10 +73,15 @@
     const stopBtn = document.getElementById("stopBtn");
     const audioPlayer = document.getElementById("audioPlayer");
 
+   // Start recording when button is clicked
     startBtn.addEventListener("click", async () => {
+      console.log("Start button clicked!");
+
       try {
         // Request user media (microphone)
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        console.log("Media stream obtained:", stream);
+        
         mediaRecorder = new MediaRecorder(stream);
 
         mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
@@ -84,13 +90,17 @@
           const audioUrl = URL.createObjectURL(audioBlob);
           audioPlayer.src = audioUrl;
 
-          // Upload audio to Firebase Storage
+          console.log("Recording stopped. Playing audio...");
+          
+          // Upload the audio to Firebase after recording stops
           await uploadToFirebase(audioBlob);
 
           audioChunks = [];
         };
 
         mediaRecorder.start();
+        console.log("Recording started!");
+
         startBtn.disabled = true;
         stopBtn.disabled = false;
       } catch (error) {
@@ -98,32 +108,27 @@
       }
     });
 
+    // Stop recording when stop button is clicked
     stopBtn.addEventListener("click", () => {
+      console.log("Stop button clicked!");
       mediaRecorder.stop();
       startBtn.disabled = false;
       stopBtn.disabled = true;
     });
 
-    // Function to upload audio to Firebase Storage
+    // Function to upload to Firebase
     async function uploadToFirebase(blob) {
-      const audioRef = storage.ref('audio_files/audio-recording-' + Date.now() + '.wav');
-      const uploadTask = audioRef.put(blob);
+      try {
+        const fileName = 'audio-' + new Date().toISOString() + '.wav';
+        const fileRef = firebase.storage().ref().child(fileName);
+        const uploadTask = await fileRef.put(blob);
 
-      uploadTask.on('state_changed', (snapshot) => {
-        // Track progress if needed
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        console.log('Upload is ' + progress + '% done');
-      }, (error) => {
-        // Handle error
-        console.error('Upload failed: ', error);
-      }, async () => {
-        // Handle completion (success)
-        console.log('Upload successful!');
-        alert('Audio uploaded successfully!');
-        // You can also get the download URL of the uploaded file here if needed
-        const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
-        console.log('File available at:', downloadURL);
-      });
+        // You can log the download URL if needed
+        const downloadURL = await uploadTask.ref.getDownloadURL();
+        console.log("File uploaded successfully: ", downloadURL);
+      } catch (error) {
+        console.error("Error uploading to Firebase: ", error);
+      }
     }
   </script>
 </body>
