@@ -46,8 +46,10 @@
   <button id="stopBtn" disabled>Stop Recording</button>
   <audio id="audioPlayer" controls></audio>
 
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.4.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.4.0/firebase-storage.js"></script>
+
   <script>
     // Firebase configuration
     const firebaseConfig = {
@@ -59,7 +61,6 @@
       appId: "1:975162590703:web:9b6f7b710424dc5815a21a"
     };
 
-    
     // Initialize Firebase
     const app = firebase.initializeApp(firebaseConfig);
     const storage = firebase.storage();
@@ -72,24 +73,29 @@
     const audioPlayer = document.getElementById("audioPlayer");
 
     startBtn.addEventListener("click", async () => {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
+      try {
+        // Request user media (microphone)
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
 
-      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        audioPlayer.src = audioUrl;
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+        mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+          const audioUrl = URL.createObjectURL(audioBlob);
+          audioPlayer.src = audioUrl;
 
-        // Upload audio to Firebase Storage
-        await uploadToFirebase(audioBlob);
+          // Upload audio to Firebase Storage
+          await uploadToFirebase(audioBlob);
 
-        audioChunks = [];
-      };
+          audioChunks = [];
+        };
 
-      mediaRecorder.start();
-      startBtn.disabled = true;
-      stopBtn.disabled = false;
+        mediaRecorder.start();
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+      } catch (error) {
+        console.error("Error accessing media devices.", error);
+      }
     });
 
     stopBtn.addEventListener("click", () => {
@@ -122,6 +128,8 @@
   </script>
 </body>
 </html>
+
+
 
 
 
